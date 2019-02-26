@@ -1,0 +1,954 @@
+---
+title: "I_Explore_Codes"
+author: "Emily Zheng"
+date: "November 20, 2018"
+output: html_document
+---
+---
+title: "I_Explore_Codes"
+author: "Emily Zheng"
+date: "November 20, 2018"
+output: html_document
+---
+---
+  title: "CH7_CH8_Zheng_R_for_Data_Science_20180706"
+author: "Mingying Zheng"
+date: "July 6, 2018"
+output: word_document
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+  title: "R Notebook"
+output: html_notebook
+Writer: Mingying Zheng
+Purpose: Study review of "R for Data Science"
+Date: June 27, 2018
+---
+  
+  This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+#  1 Introduction
+
+<!--Load Package-->
+  ```{r}
+library(tidyverse)
+
+## 1.8 Colophon
+devtools::session_info(c("tidyverse"))
+```
+<!--load package end-->
+  
+  # 3 Data visualisation
+  
+  ```{r}
+## 3.2 First steps
+mpg
+
+### 3.2.2 Creating a ggplot
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+
+### 3.2.3 A graphing template
+# ggplot(data = <DATA>) + 
+#   <GEOM_FUNCTION>(mapping = aes(<MAPPINGS>))
+```
+
+```{r}
+## 3.3 Aesthetic mappings
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = class))  # class is a variable name
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, size = class))
+
+# Left
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, alpha = class))
+
+# Right
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, shape = class))
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+
+## 3.4 Common problems
+# + it has to come at the end of the line
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+```
+
+```{r}
+## 3.5 Facets
+# for facet_wrap(), the formula is: ~ followed by a variable name, 
+# facet_wrap( ~ VARIABLE_NAME, FUNCTION)
+# nrow means 2 rows for figures
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2) 
+
+# facet_grid(), the formula is: a variable ~ a variable
+# facet_grid(VARIABLE_A ~ VARIABLE_B)
+# If you prefer to not facet in the rows or columns dimension, use a . instead of a variable name, e.g. + facet_grid(. ~ cyl).
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ cyl) # drv row, cyl column.
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(. ~ cyl) # cyl column only
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ .) # drv row only
+```
+
+```{r}
+##3.6 Geometric objects
+# left
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+
+# right
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+
+ggplot(data = mpg) + 
+  geom_smooth(mapping = aes(x = displ, y = hwy, linetype = drv)) # drv is a variable
+
+ggplot(data = mpg) +
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+
+ggplot(data = mpg) +
+  geom_smooth(mapping = aes(x = displ, y = hwy, group = drv)) # drv is a variable
+
+ggplot(data = mpg) +
+  geom_smooth(
+    mapping = aes(x = displ, y = hwy, color = drv),
+    show.legend = FALSE
+  )
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  geom_smooth(mapping = aes(x = displ, y = hwy))
+
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = class)) + 
+  geom_smooth()
+
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point(mapping = aes(color = class)) + 
+  geom_smooth(data = filter(mpg, class == "subcompact"), se = FALSE)
+```
+
+```{r}
+## 3.7 Statistical transformations
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+demo <- tribble(
+  ~cut,         ~freq,
+  "Fair",       1610,
+  "Good",       4906,
+  "Very Good",  12082,
+  "Premium",    13791,
+  "Ideal",      21551
+)
+
+ggplot(data = demo) +
+  geom_bar(mapping = aes(x = cut, y = freq), stat = "identity")
+
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, y = ..prop.., group = 1))
+
+ggplot(data = diamonds) + 
+  stat_summary(
+    mapping = aes(x = cut, y = depth),
+    fun.ymin = min,
+    fun.ymax = max,
+    fun.y = median
+  )
+```
+```{r}
+## 3.8 Position adjustments
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, colour = cut))  # cut is the variable.
+
+# position adjustment specified by the position argument.
+# If you don't want a stacked bar chart, you can use one of three other options: "identity", "dodge" or "fill".
+
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = cut))
+
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity))  # clarity is the variable.
+
+# position = "identity" will place each object exactly where it falls in the context of the graph.
+
+# make the bars slightly transparent by setting alpha to a small value, or completely transparent by setting fill = NA.
+
+ggplot(data = diamonds, mapping = aes(x = cut, fill = clarity)) + 
+  geom_bar(alpha = 1/5, position = "identity")  
+
+ggplot(data = diamonds, mapping = aes(x = cut, colour = clarity)) + 
+  geom_bar(fill = NA, position = "identity")
+
+# position = "fill" works like stacking, but makes each set of stacked bars the same height. This makes it easier to compare proportions across groups.
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "fill")
+
+# position = "dodge" places overlapping objects directly beside one another. This makes it easier to compare individual values.
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "dodge")
+
+# position = "jitter" adds a small amount of random noise to each point. 
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), position = "jitter")
+```
+
+```{r}
+## 3.9 Coordinate systems
+# coord_flip() switches the x and y axes.
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot()
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) + 
+  geom_boxplot() +
+  coord_flip()
+
+# coord_quickmap() sets the aspect ratio correctly for maps. 
+nz <- map_data("nz")
+
+ggplot(nz, aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black")
+
+ggplot(nz, aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black") +
+  coord_quickmap()
+
+# coord_polar() uses polar coordinates. Polar coordinates reveal an interesting connection between a bar chart and a Coxcomb chart.
+bar <- ggplot(data = diamonds) + 
+  geom_bar(
+    mapping = aes(x = cut, fill = cut), 
+    show.legend = FALSE,
+    width = 1
+  ) + 
+  theme(aspect.ratio = 1) +
+  labs(x = NULL, y = NULL)
+
+bar + coord_flip()
+bar + coord_polar()
+
+```
+
+```{r}
+## 3.10 The layered grammar of graphics
+# ggplot(data = <DATA>) + 
+#  <GEOM_FUNCTION>(
+#     mapping = aes(<MAPPINGS>),
+#     stat = <STAT>,     #stat_summary(fun.y = median)
+#     position = <POSITION>
+#  ) +
+#  <COORDINATE_FUNCTION> +  # coord_flip // coord_quickmap
+#  <FACET_FUNCTION> # facet_grid(drv ~ cyl)
+
+```
+
+# 4 Workflow: basics
+
+```{r}
+## 4.2 What's in a name?
+# I recommend snake_case where you separate lowercase words with _.
+# i_use_snake_case
+# otherPeopleUseCamelCase
+# some.people.use.periods
+# And_aFew.People_RENOUNCEconvention
+
+## 4.3 Calling functions
+seq()
+y <- seq(1, 10, length.out = 5) # 5 is # of numbers printed
+y
+```
+# 5 Data transformation
+
+```{r}
+# the dplyr package
+library(nycflights13)
+library(tidyverse)
+### 5.1.2 nycflights13
+flights
+# int stands for integers.
+# dbl stands for doubles, or real numbers.
+# chr stands for character vectors, or strings.
+# dttm stands for date-times (a date + a time).
+# lgl stands for logical, vectors that contain only TRUE or FALSE.
+# fctr stands for factors, which R uses to represent categorical variables with fixed possible values.
+# date stands for dates.
+
+### 5.1.3 dplyr basics
+# Pick observations by their values (filter()).
+# Reorder the rows (arrange()).
+# Pick variables by their names (select()).
+# Create new variables with functions of existing variables (mutate()).
+# Collapse many values down to a single summary (summarise()).
+# conjunction with group_by() which changes the scope of each function from operating on the entire dataset to operating on it group-by-group.
+
+## 5.2 Filter rows with filter()
+filter(flights, month == 1, day == 1)
+jan1 <- filter(flights, month == 1, day == 1)
+(dec25 <- filter(flights, month == 12, day == 25))
+
+### 5.2.1 Comparisons
+# Logical comparisons, <, <=, >, >=, !=
+# >, >=, <, <=, != (not equal), and == (equal).
+# Instead of relying on ==, use near()
+near(sqrt(2) ^ 2,  2)
+near(1 / 49 * 49, 1)
+
+### 5.2.2 Logical operators
+# Boolean operators yourself: & is "and", | is "or", and ! is "not".
+filter(flights, month == 11 | month == 12)
+
+# A useful short-hand for this problem is x %in% y. This will select every row where x is one of the values in y. 
+nov_dec <- filter(flights, month %in% c(11, 12))
+
+# De Morgan's law: !(x & y) is the same as !x | !y, and !(x | y) is the same as !x & !y
+filter(flights, !(arr_delay > 120 | dep_delay > 120))
+filter(flights, arr_delay <= 120, dep_delay <= 120)  # the two are the same in results
+
+### 5.2.3 Missing values
+# to determine if a value is missing, use is.na():
+x <- NA
+is.na(x)
+
+# filter() only includes rows where the condition is TRUE; it excludes both FALSE and NA values. If you want to preserve missing values, ask for them explicitly:
+df <- tibble(x = c(1, NA, 3))
+filter(df, x > 1)
+
+filter(df, is.na(x) | x > 1)
+
+```
+## 5.3 Arrange rows with arrange()
+```{r}
+# arrange() works similarly to filter() except that instead of selecting rows, it changes their order. 
+arrange(flights, year, month, day)
+arrange(flights, desc(dep_delay))
+df <- tibble(x = c(5, 2, NA))
+arrange(df, x)
+arrange(df, desc(x))
+```
+## 5.4 Select columns with select()
+```{r}
+# select() allows you to rapidly zoom in on a useful subset using operations based on the names of the variables.
+# Select columns by name
+select(flights, year, month, day)
+select(flights, year:day)
+select(flights, -(year:day))
+?select
+
+# use rename(), which is a variant of select() that keeps all the variables that aren't explicitly mentioned
+rename(flights, tail_num = tailnum)
+
+# everything() helper to move variables to the start of the data frame followed by the remaining variables.
+select(flights, time_hour, air_time, everything())
+```
+## 5.5 Add new variables with mutate()
+```{r}
+
+flights_sml <- select(flights, 
+                      year:day, 
+                      ends_with("delay"), 
+                      distance, 
+                      air_time
+)
+
+# mutate() always adds new columns at the end of your dataset
+#  to see all the columns - View().
+mutate(flights_sml,
+       gain = dep_delay - arr_delay,
+       speed = distance / air_time * 60
+)
+
+mutate(flights_sml,
+       gain = dep_delay - arr_delay,
+       hours = air_time / 60,
+       gain_per_hour = gain / hours
+)
+
+# only want to keep the new variables, use transmute()
+transmute(flights,
+          gain = dep_delay - arr_delay,
+          hours = air_time / 60,
+          gain_per_hour = gain / hours
+)
+
+# 5.5.1 Useful creation functions
+# %/% (integer division) and %% (remainder), where x == y * (x %/% y) + (x %% y)
+transmute(flights,
+          dep_time,
+          hour = dep_time %/% 100,  # %/% the result is an integer
+          minute = dep_time %% 100  # %% the result is the remainder, say, 5 hours, remaining 17 minutes
+)
+
+# lead() and lag() allow you to refer to leading or lagging values.
+(x <- 1:10)
+lag(x)
+lead(x)
+cumsum(x)
+cummean(x)
+
+y <- c(1, 2, 2, NA, 3, 4)
+min_rank(y)
+min_rank(desc(y))
+row_number(y)
+dense_rank(y)
+percent_rank(y)
+cume_dist(y)
+```
+## 5.6 Grouped summaries with summarise()
+
+```{r}
+summarise(flights, delay = mean(dep_delay, na.rm = TRUE))
+by_day <- group_by(flights, year, month, day)
+summarise(by_day, delay = mean(dep_delay, na.rm = TRUE))
+
+## 5.6.1 Combining multiple operations with the pipe
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest,
+                   count = n(),
+                   dist = mean(distance, na.rm = TRUE),
+                   delay = mean(arr_delay, na.rm = TRUE)
+)
+delay <- filter(delay, count > 20, dest != "HNL")
+
+ggplot(data = delay, mapping = aes(x = dist, y = delay)) +
+  geom_point(aes(size = count), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+
+# using the pipe, %>% to rewrite the above codes, %>% means "then".
+delays <- flights %>% 
+  group_by(dest) %>% 
+  summarise(
+    count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)
+  ) %>% 
+  filter(count > 20, dest != "HNL")
+
+### 5.6.2 Missing values
+flights %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay))
+
+# na.rm argument removes the missing values prior to computation.
+flights %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay, na.rm = TRUE))
+
+not_cancelled <- flights %>% 
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay))
+
+### 5.6.3 Counts
+# count (n()), or a count of non-missing values (sum(!is.na(x))).
+delays <- not_cancelled %>% 
+  group_by(tailnum) %>% 
+  summarise(
+    delay = mean(arr_delay)
+  )
+
+ggplot(data = delays, mapping = aes(x = delay)) + 
+  geom_freqpoly(binwidth = 10)
+
+delays <- not_cancelled %>% 
+  group_by(tailnum) %>% 
+  summarise(
+    delay = mean(arr_delay, na.rm = TRUE),
+    n = n()
+  )
+
+ggplot(data = delays, mapping = aes(x = n, y = delay)) + 
+  geom_point(alpha = 1/10)
+# variation decreases as the sample size increases
+
+# switch from %>% to +
+delays %>% 
+  filter(n > 25) %>% 
+  ggplot(mapping = aes(x = n, y = delay)) + 
+  geom_point(alpha = 1/10)
+
+# Convert to a tibble so it prints nicely
+# tibble() is a nice way to create data frames
+tibble(x = letters)
+tibble(x = 1:5, y = x ^ 2)
+tibble(x = 1:3, y = list(1:5, 1:10, 1:20))
+
+# a<- Lahman::Batting
+batting <- as_tibble(Lahman::Batting) # Lahman package, Batting function
+batters <- batting %>% 
+  group_by(playerID) %>% 
+  summarise(
+    ba = sum(H, na.rm = TRUE) / sum(AB, na.rm = TRUE),
+    ab = sum(AB, na.rm = TRUE)
+  )
+
+batters %>% 
+  filter(ab > 100) %>% 
+  ggplot(mapping = aes(x = ab, y = ba)) +
+  geom_point() + 
+  geom_smooth(se = FALSE)
+
+batters %>% 
+  arrange(desc(ba))
+
+```
+### 5.6.4 Useful summary functions
+
+```{r}
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(
+    avg_delay1 = mean(arr_delay),
+    avg_delay2 = mean(arr_delay[arr_delay > 0]) # the average positive delay
+  )
+
+# sd(x)
+# interquartile range IQR()
+# median absolute deviation mad(x)
+# quantile(x, 0.25) will find a value of x that is greater than 25% of the values, and less than the remaining 75%.
+not_cancelled %>% 
+  group_by(dest) %>% 
+  summarise(distance_sd = sd(distance)) %>% 
+  arrange(desc(distance_sd))
+
+# When do the first and last flights leave each day?
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(
+    first = min(dep_time),
+    last = max(dep_time)
+  )
+
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(
+    first_dep = first(dep_time), #first depature time
+    last_dep = last(dep_time)    #last departure time
+  )
+
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  mutate(r = min_rank(desc(dep_time))) %>% 
+  filter(r %in% range(r))
+
+# Which destinations have the most carriers?
+not_cancelled %>% 
+  group_by(dest) %>%          # To count the number of non-missing values, use sum(!is.na(x))
+  summarise(carriers = n_distinct(carrier)) %>%  #To count the number of distinct (unique) values, use n_distinct(x).
+  arrange(desc(carriers))
+
+not_cancelled %>% 
+  count(dest)
+
+not_cancelled %>% 
+  count(tailnum, wt = distance) # wt means a weight variable, here is distance.
+
+# How many flights left before 5am? (these usually indicate delayed
+# flights from the previous day)
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(n_early = sum(dep_time < 500)) # n_early?
+
+# What proportion of flights are delayed by more than an hour?
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(hour_perc = mean(arr_delay > 60))
+```
+### 5.6.5 Grouping by multiple variables
+```{r}
+daily <- group_by(flights, year, month, day)
+(per_day   <- summarise(daily, flights = n()))
+
+(per_month <- summarise(per_day, flights = sum(flights)))
+
+(per_year  <- summarise(per_month, flights = sum(flights)))
+```
+### 5.6.6 Ungrouping
+```{r}
+daily %>% 
+  ungroup() %>%             # no longer grouped by date
+  summarise(flights = n())  # all flights
+```
+## 5.7 Grouped mutates (and filters)
+```{r}
+flights_sml %>% 
+  group_by(year, month, day) %>%
+  filter(rank(desc(arr_delay)) < 10)
+
+popular_dests <- flights %>% 
+  group_by(dest) %>% 
+  filter(n() > 365)
+popular_dests
+
+```
+<!-- Standardise to compute per group metrics-->
+  ```{r}
+popular_dests %>% 
+  filter(arr_delay > 0) %>% 
+  mutate(prop_delay = arr_delay / sum(arr_delay)) %>% 
+  select(year:day, dest, arr_delay, prop_delay)
+```
+# 6 Workflow: scripts
+## 6.1 Running code
+
+```{r}
+library(dplyr)
+library(nycflights13)
+```
+
+```{r}
+not_cancelled <- flights %>% 
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+---
+  title: "CH7_CH8_Zheng_R_for_Data_Science_20180706"
+author: "Mingying Zheng"
+date: "July 6, 2018"
+output: html_document
+---
+  
+<!--CH7-->
+# Exploratory Data Analysis (EDA)
+##  7.1 Introduction
+### Prerequisites
+<!--load library(tidyverse)-->
+```{r}
+library(tidyverse)
+```
+##  7.3 Variation
+### 7.3.1 Visualising distributions
+```{r}
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut))
+```
+
+```{r}
+ggplot(mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color=class))
+```
+
+```{r}
+
+# <!--categorical-->
+  
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut)) #bar for categorical variables
+  
+# dplyr::count()  
+diamonds %>% 
+  count(cut)
+
+# <!--continuous-->
+  ggplot(data = diamonds) +
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.5)  #histogram for continuous variables, displays the counts
+
+diamonds %>% 
+  count(cut_width(carat, 0.5))
+  
+smaller <- diamonds %>% 
+  filter(carat < 3)
+  
+ggplot(data = smaller, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.1)  
+  
+ggplot(data = smaller, mapping = aes(x = carat, colour = cut)) +
+  geom_freqpoly(binwidth = 0.1) # freqpoly displays lines
+```
+
+### 7.3.2 Typical values
+```{r}
+ggplot(data = smaller, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.01)
+
+ggplot(data = faithful, mapping = aes(x = eruptions)) + 
+  geom_histogram(binwidth = 0.10)
+```
+### 7.3.3 Unusual values
+```{r}
+ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5)
+
+ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+  coord_cartesian(ylim = c(0, 50)) #ylim-> y limit.
+
+unusual <- diamonds %>% 
+  filter(y < 3 | y > 20) %>% 
+  select(price, x, y, z) %>%
+  arrange(y)
+unusual 
+  
+```
+## 7.4. Missing values
+```{r}
+diamonds2 <- diamonds %>% 
+  filter(between(y, 3, 20)) #y value is between 3 and 20, not recommended
+
+diamonds2 <- diamonds %>% 
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))  # recommended.
+```
+#ifelse() has three arguments. The first argument test should be a logical vector. The result will contain the value of the second argument, yes, when test is TRUE, and the value of the third argument, no, when it is false. Alternatively to ifelse, use dplyr::case_when(). case_when() is particularly useful inside mutate when you want to create a new variable that relies on a complex combination of existing variables.
+
+```{r}
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + #> Warning: Removed 9 rows containing missing values (geom_point).
+  geom_point()
+
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) +   # To suppress that warning, set na.rm = TRUE:
+  geom_point(na.rm = TRUE)
+
+```
+```{r}
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),  # is.na() is used to indicate the departure time is not available, or cancelled.
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(sched_dep_time)) + 
+    geom_freqpoly(mapping = aes(colour = cancelled), binwidth = 1/4)
+```
+## 7.5 Covariation
+### 7.5.1 A categorical and continuous variable
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+
+ggplot(diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+```
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot()
+```
+```{r}
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy)) # reorder class based on the median value of hwy.
+```
+
+```{r}
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy)) +
+  coord_flip()
+```
+
+### 7.5.2 Two categorical variables
+
+```{r}
+ggplot(data = diamonds) +
+  geom_count(mapping = aes(x = cut, y = color))
+  
+```
+```{r}
+diamonds %>% 
+  count(color, cut)
+```
+```{r}
+diamonds %>% 
+  count(color, cut) %>%  
+  ggplot(mapping = aes(x = color, y = cut)) +
+    geom_tile(mapping = aes(fill = n))
+```
+
+### 7.5.3 Two continuous variables
+```{r}
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, y = price)) # less useful for large datasets
+```
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_point(mapping = aes(x = carat, y = price), alpha = 1 / 100) # using the alpha aesthetic to add transparency, less useful for very large datasets.
+```
+
+library(hexbin)
+```{r}
+# geom_bin2d() and geom_hex() divide the coordinate plane into 2d bins and then use a fill color to display how many points fall into each bin. geom_bin2d() creates rectangular bins. geom_hex() creates hexagonal bins. You will need to install the hexbin package to use geom_hex().
+ggplot(data = smaller) +
+  geom_bin2d(mapping = aes(x = carat, y = price)) #
+
+# install.packages("hexbin")
+library(hexbin)
+ggplot(data = smaller) +
+  geom_hex(mapping = aes(x = carat, y = price))
+```
+
+```{r}
+ggplot(data = smaller, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_width(carat, 0.1))) # cut_width(x, width) divides x into bins of width width.
+```
+```{r}
+ggplot(data = smaller, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_number(carat, 20)))
+```
+####. 7.5.3.1 Exercises
+```{r}
+library(tidyverse)
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = x, y = y)) +
+  coord_cartesian(xlim = c(4, 11), ylim = c(4, 11))
+```
+
+### 7.6 Patterns and models
+```{r}
+ggplot(data = faithful) + 
+  geom_point(mapping = aes(x = eruptions, y = waiting))
+```
+
+```{r}
+library(modelr)
+
+mod <- lm(log(price) ~ log(carat), data = diamonds)
+mod
+# diamond2 data created to remove the effect of carat on the price, 
+# other variables such as cut relative to their size--(data type-ord) on the price
+diamonds2 <- diamonds %>% 
+  add_residuals(mod) %>% 
+  mutate(resid = exp(resid))
+
+ggplot(data = diamonds2) + 
+  geom_point(mapping = aes(x = carat, y = resid))
+```
+
+```{r}
+# the carat predicts price
+mod1 <- lm(price ~ carat, data = diamonds)
+mod1
+```
+
+```{r}
+head(diamonds)
+```
+
+
+```{r}
+
+ggplot(data = diamonds2) + 
+  geom_boxplot(mapping = aes(x = cut, y = resid))
+```
+
+## 7.7 ggplot2 calls
+```{r}
+ggplot(data = faithful, mapping = aes(x = eruptions)) + 
+  geom_freqpoly(binwidth = 0.25)
+```
+
+```{r}
+ggplot(faithful, aes(eruptions)) + 
+  geom_freqpoly(binwidth = 0.25)  #Rewriting the previous plot more concisely
+```
+```{r}
+diamonds %>% 
+  count(cut, clarity) %>% 
+  ggplot(aes(clarity, cut, fill = n)) + 
+    geom_tile()
+```
+
+<!--CH8-->
+
+# Workflow: projects
+## What is real?
+<!--Press Cmd/Ctrl + Shift + F10 to restart RStudio.-->
+<!-- Press Cmd/Ctrl + Shift + S to rerun the current script.-->
+
+## Where does your analysis live?
+```{r}
+getwd()  #current working directory
+```
+
+```{r}
+# set the working directory, not recommended
+# setwd("/path/to/my/CoolProject") 
+setwd("S:/Projects/DLM Secure/Staff Projects/Emily Projects/5. R_For_Data_Science_Review 20180706/I Explore")
+
+```
+## Paths and directories
+<!-- Mac and Linux uses slashes (e.g. plots/diamonds.pdf) and Windows uses backslashes (e.g. plots\diamonds.pdf).-->
+
+## RStudio projects
+
+```{r}
+getwd()
+```
