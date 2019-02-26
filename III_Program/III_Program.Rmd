@@ -1,0 +1,2147 @@
+---
+title: "III_Program_Codes"
+author: "Emily Zheng"
+date: "November 21, 2018"
+output: html_document
+---
+---
+title: "III Program"
+author: "Mingying Zheng"
+date: "July 16, 2018"
+output: html_document
+---
+
+<!-- CH17 Intro -->
+# Introduction
+
+## Learning more
+
+<!--CH17 End-->
+
+<!--CH18 Pipes -->
+
+# Pipes
+## Introduction 
+### Prerequisites
+
+```{r}
+library(magrittr) #%>%, comes from the magrittr package by Stefan Milton Bache
+```
+
+## Piping alternatives
+
+### Intermediate steps
+```{r}
+library(pryr)
+diamonds <- ggplot2::diamonds
+diamonds2 <- diamonds %>% 
+  dplyr::mutate(price_per_carat = price / carat)
+
+pryr::object_size(diamonds)
+
+pryr::object_size(diamonds2)
+
+pryr::object_size(diamonds, diamonds2) # pryr::object_size() gives the memory occupied by all of its arguments.
+```
+
+```{r}
+diamonds$carat[1] <- NA
+pryr::object_size(diamonds)
+
+pryr::object_size(diamonds2)
+
+pryr::object_size(diamonds, diamonds2)
+```
+
+# Overwrite the original
+```{r}
+foo_foo <- little_bunny()
+foo_foo <- hop(foo_foo, through = forest)
+foo_foo <- scoop(foo_foo, up = field_mice)
+foo_foo <- bop(foo_foo, on = head)
+
+bop(
+  scoop(
+    hop(foo_foo, through = forest),
+    up = field_mice
+  ), 
+  on = head
+)
+
+foo_foo %>%
+  hop(through = forest) %>%
+  scoop(up = field_mice) %>%
+  bop(on = head)
+
+my_pipe <- function(.) {
+  . <- hop(., through = forest)
+  . <- scoop(., up = field_mice)
+  bop(., on = head)
+}
+my_pipe(foo_foo)
+```
+
+```{r}
+assign("x", 10)
+x
+
+"x" %>% assign(100) #assign won't work here.
+x
+
+env <- environment()
+"x" %>% assign(100, envir = env) #If you do want to use assign with the pipe, you must be explicit about the environment.
+x
+```
+
+```{r}
+tryCatch(stop("!"), error = function(e) "An error")
+
+stop("!") %>% 
+  tryCatch(error = function(e) "An error")
+```
+
+## Other tools from magrittr
+```{r}
+rnorm(100) %>%
+  matrix(ncol = 2) %>%
+  plot() %>%
+  str()
+
+rnorm(100) %>%
+  matrix(ncol = 2) %T>% #%T>% works like %>% except that it returns the left-hand side instead of the right-hand side.
+  plot() %>%
+  str()
+```
+
+```{r}
+rnorm(100)
+?rnorm()
+# dnorm gives the density
+dnorm(x, mean = 0, sd = 1, log = FALSE)
+head(x)
+# pnorm gives the distribution function
+?pnorm
+pnorm(x, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+
+# qnorm gives the quantile function
+qnorm(x, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+
+# rnorm generates random deviates.
+rnorm(x, mean = 0, sd = 1)
+```
+
+```{r}
+dnorm(0, mean = 0, sd = 1, log = FALSE)
+dnorm(1, mean = 0, sd = 1, log = FALSE)
+
+pnorm(0, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+pnorm(1, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+
+qnorm(0, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+qnorm(1, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+
+rnorm(10, mean = 0, sd = 1) 
+```
+
+```{r}
+z<- par(mfrow = c(2,1)) #par-to set or query graphical parameters
+z
+plot(function(x) dnorm(x, log = TRUE), -60, 50,
+     main = "log { Normal density }")
+curve(log(dnorm(x)), add = TRUE, col = "red", lwd = 2) #lwd means line width.
+mtext("dnorm(x, log=TRUE)", adj = 0)
+mtext("log(dnorm(x))", col = "red", adj = 1)
+plot(function(x) pnorm(x, log.p = TRUE), -50, 10,
+     main = "log { Normal Cumulative }") 
+curve(log(pnorm(x)), add = TRUE, col = "red", lwd = 2)
+mtext("pnorm(x, log=TRUE)", adj = 0)
+mtext("log(pnorm(x))", col = "red", adj = 1)
+```
+
+```{r}
+erf <- function(x) 2 * pnorm(x * sqrt(2)) - 1
+erfc <- function(x) 2 * pnorm(x * sqrt(2), lower = FALSE)
+erfinv <- function (x) qnorm((1 + x)/2)/sqrt(2)
+erfcinv <- function (x) qnorm(x/2, lower = FALSE)/sqrt(2)
+```
+
+```{r}
+# you pass them individual vectors, not a data frame and expressions to be evaluated in the context of that data frame), you might find %$% useful. It ???explodes??? out the variables in a data frame so that you can refer to them explicitly
+mtcars %$%
+  cor(disp, mpg)
+
+# %<>% operator which allows you to replace code like:
+mtcars <- mtcars %>% 
+  transform(cyl = cyl * 2)
+
+#with 
+mtcars %<>% transform(cyl = cyl * 2)
+```
+<!--CH18 End-->
+
+<!--CH19 Functions-->
+
+<!--CH18_Pipes End-->
+
+<!--CH19_Functions-->
+
+# Functions
+## Introduction
+### Prerequisites
+
+## When should you write a function?
+```{r}
+df <- tibble::tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+```
+
+```{r}
+df$a <- (df$a - min(df$a, na.rm = TRUE)) / 
+  (max(df$a, na.rm = TRUE) - min(df$a, na.rm = TRUE))
+df$b <- (df$b - min(df$b, na.rm = TRUE)) / 
+  (max(df$b, na.rm = TRUE) - min(df$a, na.rm = TRUE)) # an error here , should be df$b.
+df$c <- (df$c - min(df$c, na.rm = TRUE)) / 
+  (max(df$c, na.rm = TRUE) - min(df$c, na.rm = TRUE))
+df$d <- (df$d - min(df$d, na.rm = TRUE)) / 
+  (max(df$d, na.rm = TRUE) - min(df$d, na.rm = TRUE))
+```
+
+```{r}
+x <- df$a
+(x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+```
+
+```{r}
+rng <- range(x, na.rm = TRUE)
+(x - rng[1]) / (rng[2] - rng[1])
+```
+
+```{r}
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+rescale01(c(0, 5, 10))
+rescale01(c(-10, 0, 10))
+rescale01(c(1, 2, 3, NA, 5))
+```
+
+```{r}
+df$a <- rescale01(df$a)
+df$b <- rescale01(df$b)
+df$c <- rescale01(df$c)
+df$d <- rescale01(df$d)
+df$a
+df$b
+df$c
+df$d
+```
+
+```{r}
+x <- c(1:10, Inf) #Inf means a non-zero number divided by zero creates infinity
+x <- c(1:10, 2)
+x1<- (1:10)
+x2 <- 1:10
+x
+x1
+x2
+c(x)
+c(x1)
+c(x2)
+rescale01(x)
+?Inf
+?c
+(y <- c(rnorm(10)))
+?data.frame()
+(y1 <- data.frame(x=rnorm(10), y=1:5))
+(y2= tibble(x=rnorm(20), y= dnorm(1), z=1:20))
+
+# pi / 0 ## = Inf
+# 0 / 0  ## =  NaN
+
+```
+
+```{r}
+?rbinom
+# dbinom(x, size, prob, log = FALSE)
+
+#  pbinom uses pbeta.
+# pbinom(q, size, prob, lower.tail = TRUE, log.p = FALSE)
+
+# qbinom uses the Cornish???Fisher Expansion to include a skewness correction to a normal approximation
+# qbinom(p, size, prob, lower.tail = TRUE, log.p = FALSE)
+
+# rbinom(n, size, prob)
+```
+
+### practice
+```{r}
+mnFunc <-function(x){
+  mn <-mean(is.na(x))
+x / sum(x, na.rm = TRUE)
+sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+}
+
+mnFunc(c(5, 10, 15, 20))
+mnFunc(c(10, 100, 1000))
+mnFunc(c(10, 100, NA,1000))
+
+```
+
+
+```{r}
+is_directory <- function(x) file.info(x)$isdir
+is_readable <- function(x) file.access(x, 4) == 0
+
+```
+
+<!--Writing functions-->
+```{r}
+herbivore <- read.csv("V:/AAI docs/R_For_Data_Science_Review 20180706/III Program/herbivore.txt", sep=";")
+
+round(mean(herbivore$Height), 2)
+round(var(herbivore$Height), 2)
+length(herbivore$Height)
+round(sqrt(var(herbivore$Height)/length(herbivore$Height)), 2)
+round(sqrt(var(herbivore$Weight)/length(herbivore$Weight)), 2)
+```
+
+```{r}
+SE <- function(x) {
+  sqrt(var(x)/length(x))
+}
+
+round(SE(herbivore$Height), 2)
+round(SE(herbivore$Weight), 2)
+
+SE<- function(x){
+  v<- var(x)
+  n<- length(x)
+  sqrt(v/n)
+}
+```
+
+```{r}
+x<- herbivore$Height
+n<-length(x)
+(1/(n-1))
+m<- mean(x)
+x-m
+(x-m)^2
+sum((x-m)^2)
+# variance
+(1/(n-1))*sum((x-m)^2)
+var(x)
+# the rm function cleans up
+rm(n, x, m)
+```
+
+```{r}
+variance<-function(x){
+  n<- length(x)
+  m<- mean(x)
+  (1/(n-1))*sum((x-m)^2)
+}
+```
+
+```{r}
+variance(herbivore$Height)
+var(herbivore$Height)
+variance(herbivore$Weight)
+var(herbivore$Weight)
+```
+
+```{r}
+skewness <- function(x){
+  n<- length(x)
+  v<- var(x)
+  m<- mean(x)
+  third.moment<- (1/(n-2))*sum((x-m)^3)
+  third.moment/(var(x)^(3/2))
+}
+
+skewness(herbivore$Height)
+skewness(herbivore$Weight)
+```
+
+## round(sqrt(var(herbivore$Height)/length(herbivore$Height)), 2)
+#comments:
+    # Load data --------------------------------------
+    # Plot data --------------------------------------
+
+### Exercises
+```{r}
+string_prefix <- function(string, prefix) {
+  substr(string, 1, nchar(prefix)) == prefix
+}
+data_minus_one <- function(x) {
+  if (length(x) <= 1) return(NULL)
+  x[-length(x)]
+}
+data_replace <- function(x, y) {
+  rep(y, length.out = length(x))
+}
+string_prefix("emily", "m")
+data_minus_one(y)
+data_replace(x1, y)
+```
+
+```{r}
+?rnorm
+# rnorm(n, mean = 0, sd = 1)
+
+?MASS::mvrnorm()
+# mvrnorm(n = 1, mu, Sigma, tol = 1e-6, empirical = FALSE, EISPACK = FALSE)
+
+library(MASS)
+Sigma <- matrix(c(10,3,3,2),2,2) # Sigma-a positive-definite symmetric matrix specifying the covariance matrix of the variables
+Sigma
+var(mvrnorm(n = 1000, rep(0, 2), Sigma))
+var(mvrnorm(n = 1000, rep(0, 2), Sigma, empirical = TRUE))
+```
+
+## Conditional execution
+### Conditions
+
+```{r}
+identical(0L, 0)
+x <- sqrt(2) ^ 2
+x
+x == 2
+x - 2
+```
+
+### Multiple conditions
+
+<!-- switch() function. It allows you to evaluate selected code based on position or name.-->
+
+### Code style
+```{r}
+if (y < 0 && debug) {
+  message("Y is negative")
+}
+
+if (y == 0) {
+  log(x)
+} else {
+  y ^ x
+}
+```
+
+#Exercises
+```{r}
+#if
+# ifelse # ifelse(test, yes, no)
+x <- c(6:-4)
+sqrt(x)  #- gives warning
+sqrt(ifelse(x >= 0, x, NA))
+```
+
+```{r}
+library(lubridate)
+greeting <-function(x){
+  if(x>0 && x< 12)
+  {
+    message("good morning")
+  }
+  else if (x >= 12 && x< 18)
+    
+{
+    message("good afternoon")
+  }
+  else {
+    message("good evening")
+  }
+}
+
+greeting(17)
+```
+
+```{r}
+?cut()
+# cut(x, breaks, labels = NULL,
+    # include.lowest = FALSE, right = TRUE, dig.lab = 3,
+    # ordered_result = FALSE, ...)
+Z <- stats::rnorm(10000)
+table(cut(Z, breaks = -6:6))
+sum(table(cut(Z, breaks = -6:6, labels = FALSE)))
+sum(graphics::hist(Z, breaks = -6:6, plot = FALSE)$counts)
+
+cut(rep(1,5), 4) #rep(1,5) is data.frame, or x, 4 is the breaks, into 4
+```
+
+##  Function arguments
+```{r}
+# Compute confidence interval around mean using normal approximation
+mean_ci <- function(x, conf = 0.95) {
+  se <- sd(x) / sqrt(length(x))
+  alpha <- 1 - conf
+  mean(x) + se * qnorm(c(alpha / 2, 1 - alpha / 2))
+}
+
+?runif
+?rnorm
+x <- runif(100)
+mean_ci(x)
+
+mean_ci(x, conf = 0.99)
+
+
+```
+
+```{r}
+dunif(x, min = 0, max = 1, log = FALSE)
+punif(q, min = 0, max = 1, lower.tail = TRUE, log.p = FALSE)
+qunif(p, min = 0, max = 1, lower.tail = TRUE, log.p = FALSE)
+runif(n, min = 0, max = 1)
+
+dnorm(x, mean = 0, sd = 1, log = FALSE)
+pnorm(q, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+qnorm(p, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+rnorm(n, mean = 0, sd = 1)
+```
+
+```{r}
+z1 <- runif(10)
+z2 <- rnorm(10)
+z1
+z2
+
+```
+
+```{r}
+mean(1:10, na.rm = TRUE)
+
+```
+
+### Choosing names
+```{r}
+# x, y, z: vectors.
+# w: a vector of weights.
+# df: a data frame.
+# i, j: numeric indices (typically rows and columns).
+# n: length, or number of rows.
+# p: number of columns.
+
+```
+
+### Checking values
+```{r}
+wt_mean <- function(x, w) {
+  sum(x * w) / sum(w)
+}
+wt_var <- function(x, w) {
+  mu <- wt_mean(x, w)
+  sum(w * (x - mu) ^ 2) / sum(w)
+}
+wt_sd <- function(x, w) {
+  sqrt(wt_var(x, w))
+}
+
+wt_mean(1:6, 1:3)
+```
+
+```{r}
+wt_mean <- function(x, w) {
+  if (length(x) != length(w)) {
+    stop("`x` and `w` must be the same length", call. = FALSE)
+  }
+  sum(w * x) / sum(w)
+}
+```
+
+```{r}
+wt_mean <- function(x, w, na.rm = FALSE) {
+  if (!is.logical(na.rm)) {
+    stop("`na.rm` must be logical")
+  }
+  if (length(na.rm) != 1) {
+    stop("`na.rm` must be length 1")
+  }
+  if (length(x) != length(w)) {
+    stop("`x` and `w` must be the same length", call. = FALSE)
+  }
+  
+  if (na.rm) {
+    miss <- is.na(x) | is.na(w)
+    x <- x[!miss]
+    w <- w[!miss]
+  }
+  sum(w * x) / sum(w)
+}
+```
+
+```{r}
+# stopifnot(): it checks that each argument is TRUE, and produces a generic error message if not.
+
+wt_mean <- function(x, w, na.rm = FALSE) {
+  stopifnot(is.logical(na.rm), length(na.rm) == 1)
+  stopifnot(length(x) == length(w))
+  
+  if (na.rm) {
+    miss <- is.na(x) | is.na(w)
+    x <- x[!miss]
+    w <- w[!miss]
+  }
+  sum(w * x) / sum(w)
+}
+wt_mean(1:6, 6:1, na.rm = "foo")
+```
+
+### Dot-dot-dot (???)
+
+```{r}
+# 
+sum(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+stringr::str_c("a", "b", "c", "d", "e", "f")
+commas <- function(...) stringr::str_c(..., collapse = ", ")
+commas(letters[1:10])
+```
+```{r}
+xa <- c(1, 2)
+xy <- c(2, 2)
+sum(xa, na.mr = TRUE)
+sum(xa)
+sum(xy, na.mr = TRUE)
+
+sum(1:2)
+sum(1,2)
+sum(1:2, 3:5)
+```
+
+### Lazy evaluation
+```{r}
+f <- function(x) x^2
+f 
+formals(f) #the formals(), the list of arguments which controls how you can call the function.
+body(f) #the body(), the code inside the function.
+environment(f) #the environment(), the ???map??? of the location of the function???s variables.
+```
+#### Lazy evaluation_Exercises
+```{r}
+objs <- mget(ls("package:base"), inherits = TRUE)
+funs <- Filter(is.function, objs)
+```
+
+#### Lazy evaluation_Lexical scoping
+```{r}
+# lexical scoping, implemented automatically at the language level,
+x <- 10
+x
+```
+
+#### Lazy evaluation_Lexical scoping_Name masking
+```{r}
+f <- function() {
+  x <- 1
+  y <- 2
+  c(x, y)
+}
+f()
+rm(f)
+```
+
+```{r}
+x <- 2
+g <- function() {
+  y <- 1
+  c(x, y)
+}
+g()
+rm(x, g)
+```
+
+```{r}
+x <- 1
+h <- function() {
+  y <- 2
+  i <- function() {
+    z <- 3
+    c(x, y, z)
+  }
+  i()
+}
+h()
+rm(x, h)
+```
+
+```{r}
+j <- function(x) {
+  y <- 2
+  function() {
+    c(x, y)
+  }
+}
+k <- j(1)
+k()
+rm(j, k)
+```
+
+#### Lazy evaluation_Lexical scoping_Functions vs. variables
+```{r}
+l <- function(x) x + 1
+m <- function() {
+  l <- function(x) x * 2
+  l(10)
+}
+m()
+```
+
+```{r}
+n <- function(x) x / 2
+o <- function() {
+  n <- 10
+  n(n)
+}
+o()
+```
+
+#### Lazy evaluation_Lexical scoping_A fresh start
+```{r}
+j <- function() {
+  if (!exists("a")) { #exists(): it returns TRUE if there???s a variable of that name, otherwise it returns FALSE.)
+    a <- 1
+  } else {
+    a <- a + 1
+  }
+  a
+}
+j()
+rm(j)
+```
+
+#### Lazy evaluation_Lexical scoping_Dynamic lookup
+```{r}
+f <- function() x
+x <- 15
+f()
+
+x <- 20
+f()
+```
+
+```{r}
+f <- function() x + 1
+codetools::findGlobals(f) #detect the problem is the findGlobals() function from codetools
+```
+
+```{r}
+environment(f) <- emptyenv()
+f()
+```
+
+```{r}
+`(` <- function(e1) {
+  if (is.numeric(e1) && runif(1) < 0.1) {
+    e1 + 1
+  } else {
+    e1
+  }
+}
+replicate(50, (1 + 2))
+rm("(")
+```
+
+#### Lazy evaluation_Lexical scoping_Exercises
+```{r}
+c <- 10
+c(c = c)
+```
+
+```{r}
+f <- function(x) {
+  f <- function(x) {
+    f <- function(x) {
+      x ^ 2   #100
+    }
+    f(x) + 1  #101
+  }
+  f(x) * 2    #202
+}
+f(10)
+```
+
+#### Lazy evaluation_Every operation is a function call
+```{r}
+if (i == 1) print("yes!") else print("no.")
+```
+
+```{r}
+add <- function(x, y) x + y
+sapply(1:10, add, 3)
+?sapply
+```
+
+```{r}
+# require(stats); require(graphics)
+x <- list(a = 1:10, beta = exp(-3:3), logic = c(TRUE,FALSE,FALSE,TRUE))
+x
+# lapply returns a list of the same length as X, each element of which is the result of applying FUN to the corresponding element of X.
+# compute the list mean for each list element
+lapply(x, mean)
+# median and quartiles for each list element
+lapply(x, quantile, probs = 1:3/4)
+
+#sapply is a user-friendly version and wrapper of lapply by default returning a vector, matrix or, if simplify = "array", an array if appropriate, by applying simplify2array(). sapply(x, f, simplify = FALSE, USE.NAMES = FALSE) is the same as lapply(x, f).
+sapply(x, quantile)
+
+i39 <- sapply(3:9, seq) # list of vectors
+i39
+sapply(i39, fivenum)
+vapply(i39, fivenum,
+       c(Min. = 0, "1st Qu." = 0, Median = 0, "3rd Qu." = 0, Max. = 0))
+
+## sapply(*, "array") -- artificial example
+(v <- structure(10*(5:8), names = LETTERS[1:4]))
+f2 <- function(x, y) outer(rep(x, length.out = 3), y)
+f2
+(a2 <- sapply(v, f2, y = 2*(1:5), simplify = "array"))
+a.2 <- vapply(v, f2, outer(1:3, 1:5), y = 2*(1:5))
+a.2
+stopifnot(dim(a2) == c(3,5,4), all.equal(a2, a.2),
+          identical(dimnames(a2), list(NULL,NULL,LETTERS[1:4])))
+
+hist(replicate(100, mean(rexp(10))))
+
+## use of replicate() with parameters:
+foo <- function(x = 1, y = 2) c(x, y)
+# does not work: bar <- function(n, ...) replicate(n, foo(...))
+bar <- function(n, x) replicate(n, foo(x = x))
+bar(5, x = 3)
+```
+
+#### Lazy evaluation_Every operation_Function arguments
+### Calling functions
+
+```{r}
+f <- function(abcdef, bcde1, bcde2) {
+  list(a = abcdef, b1 = bcde1, b2 = bcde2)
+}
+str(f(1, 2, 3))
+```
+
+```{r}
+str(f(2, 3, abcdef = 1))
+```
+
+```{r}
+mean(1:10) # good call
+mean(1:10, trim = 0.05) # good call
+sum(1:20, trim = 0.005)
+mean(x = 1:10) # overkill call
+```
+
+### Calling a function given a list of arguments
+```{r}
+args <- list(1:10, na.rm = TRUE)
+do.call(mean, args)
+mean(1:10, na.rm = TRUE) ## Equivalent to above one
+```
+
+### Default and missing arguments
+```{r}
+f <- function(a = 1, b = 2) {
+  c(a, b)
+}
+f()
+```
+
+```{r}
+g <- function(a = 1, b = a * 2) {
+  c(a, b)
+}
+g()
+```
+
+```{r}
+h <- function(a = 1, b = d) {
+  d <- (a + 1) ^ 2
+  c(a, b)
+}
+h()
+h(10)
+```
+
+```{r}
+i <- function(a, b) {
+  c(missing(a), missing(b))
+}
+i()
+
+i(a = 1)
+i(b = 2)
+i(1, 2)
+```
+
+### Lazy evaluation
+```{r}
+f <- function(x) {
+  10
+}
+f(stop("This is an error!"))
+
+f <- function(x) {
+  force(x)
+  10
+}
+f(stop("This is an error!"))
+```
+
+```{r}
+add <- function(x) {
+  function(y) x + y
+}
+adders <- lapply(1:10, add)
+adders[[1]](10)
+adders[[10]](10)
+```
+
+```{r}
+add <- function(x) {
+  force(x)
+  function(y) x + y
+}
+adders2 <- lapply(1:10, add)
+adders2[[1]](10)
+adders2[[10]](10)
+
+add <- function(x) { # equivalent to above function
+  x
+  function(y) x + y
+}
+```
+
+```{r}
+f <- function(x = ls()) {
+  a <- 1
+  x
+}
+f(ls())
+```
+
+### Exercises
+```{r}
+x1 <- sample(replace = TRUE, 20, x = c(1:10, NA))
+x2 <- sample(x = c(1:10, NA), 20, replace = TRUE)
+x1
+x2
+y1 <- runif(min = 0, max = 1, 20)
+y1
+y2 <- runif(20)
+y2
+cor(m = "k", y = y1, u = "p", x = x1)
+cor(m = "k", y = y2, u = "p", x = x2)
+```
+
+```{r}
+f1 <- function(x = {y <- 1; 2}, y = 0) {
+  x + y
+}
+f1()
+```
+
+```{r}
+f2 <- function(x = z) {
+  z <- 100
+  x
+}
+f2()
+
+rm(f1, f2)
+```
+
+### Special calls
+#### Infix functions
+
+```{r}
+#  All user-created infix functions must start and end with %. R comes with the following infix functions predefined: %%, %*%, %/%, %in%, %o%, %x%. (The complete list of built-in infix operators that don???t need % is: :, ::, :::, $, @, ^, *, /, +, -, >, >=, <, <=, ==, !=, !, &, &&, |, ||, ~, <-, <<-) 
+
+# when creating the function, you have to put the name in backticks because it???s a special name.
+`%+%` <- function(a, b) paste0(a, b)
+"new" %+% " string"
+
+"new" %+% " string"
+`%+%`("new", " string")
+
+1 + 5
+`+`(1, 5)
+
+# paste0 is short for: paste(x, sep="")
+# paste0("a", "b") == paste("a", "b", sep="")
+`% %` <- function(a, b) paste(a, b)
+`%'%` <- function(a, b) paste(a, b)
+`%/\\%` <- function(a, b) paste(a, b)
+
+"a" % % "b"
+"a" %'% "b"
+"a" %/\% "b"
+```
+
+## Return values
+<!-- library() which loads a package, and hence modifies the search path.
+setwd(), Sys.setenv(), Sys.setlocale() which change the working directory, environment variables, and the locale, respectively.
+plot() and friends which produce graphical output.
+write(), write.csv(), saveRDS(), etc. which save output to disk.
+options() and par() which modify global settings.
+S4 related functions which modify global tables of classes and methods.
+Random number generators which produce different numbers each time you run them.-->
+
+### On exit
+```{r}
+in_dir <- function(dir, code) {
+  old <- setwd(dir)
+  on.exit(setwd(old))
+
+  force(code)
+}
+getwd()
+
+in_dir("~", getwd())
+```
+
+### CH19_5.5_Exercises
+```{r}
+# commas(letters, collapse = "-")
+# commas(letters, collapse = ",")
+
+```
+
+## Return values
+### Explicit return statements
+```{r}
+complicated_function <- function(x, y, z) {
+  if (length(x) == 0 || length(y) == 0) {
+    return(0)
+  }
+    
+  # Complicated code here
+}
+
+f <- function() {
+  if (x) {
+    # Do 
+    # something
+    # that
+    # takes
+    # many
+    # lines
+    # to
+    # express
+  } else {
+    # return something short
+  }
+}
+
+
+f <- function() {
+  if (!x) {
+    return(something_short)
+  }
+
+  # Do 
+  # something
+  # that
+  # takes
+  # many
+  # lines
+  # to
+  # express
+}
+```
+
+### Writing pipeable functions
+```{r}
+show_missings <- function(df) {
+  n <- sum(is.na(df))
+  cat("Missing values: ", n, "\n", sep = "")
+  
+  invisible(df) # the invisible() means that the input df doesn???t get printed out:
+}
+
+show_missings(mtcars)
+```
+
+```{r}
+x <- show_missings(mtcars) 
+
+class(x)
+
+dim(x)
+
+library(tidyverse)
+
+mtcars %>% 
+  show_missings() %>% 
+  mutate(mpg = ifelse(mpg < 20, NA, mpg)) %>% 
+  show_missings()
+```
+
+## Environment
+```{r}
+f <- function(x) {
+  x + y
+} 
+
+y <- 100
+f(10)
+
+y <- 1000
+f(10)
+```
+
+```{r}
+`+` <- function(x, y) {
+  if (runif(1) < 0.1) {
+    sum(x, y)
+  } else {
+    sum(x, y) * 1.1
+  }
+}
+table(replicate(1000, 1 + 2))
+
+rm(`+`)
+```
+
+<!--CH19 End-->
+
+
+<!--CH19_Functions End-->
+
+<!--CH20_Vectors-->
+
+# Vectors
+## Introduction
+### Prerequisites
+
+## Vector basics
+<!--two types of vectors-->
+
+<!--1. Atomic vectors, of which there are six types: logical, integer, double, character, complex, and raw. Integer and double vectors are collectively known as numeric vectors.-->
+<!-- 2. Lists, which are sometimes called recursive vectors because lists can contain other lists.-->
+
+<!-- The chief difference between atomic vectors and lists is that atomic vectors are homogeneous, while lists can be heterogeneous.-->
+
+<!-- NULL is often used to represent the absence of a vector (as opposed to NA which is used to represent the absence of a value in a vector).-->
+
+<!-- Every vector has two key properties: Its type, which you can determine with typeof().Its length, which you can determine with length()-->
+
+```{r}
+typeof(letters)
+
+typeof(1:10)
+```
+
+```{r}
+x <- list("a", "b", 1:10)
+length(x)
+```
+
+## Important types of atomic vector
+###  Logical-FALSE, TRUE, and NA
+```{r}
+1:10 %% 3 == 0  #%% remainder 3/3 %%0, 6/3 %%0, 9/3 %%0.
+
+c(TRUE, TRUE, FALSE, NA)
+```
+
+### Numeric
+<!-- Integer and double vectors, To make an integer, place an L after the number-->
+```{r}
+typeof(1)
+
+typeof(1L)
+```
+
+<!-- Doubles are approximations.-->
+<!-- use `dplyr::near()` which allows for some numerical tolerance.-->
+<!-- Integers have one special value: NA, while doubles have four: NA, NaN, Inf and -Inf. All three special values NaN, Inf and -Inf can arise during division:-->
+
+<!-- Inf and -Inf are positive and negative infinity whereas NaN means 'Not a Number'. (These apply to numeric values and real and imaginary parts of complex values but not to values of integer vectors.)-->
+
+```{r}
+x<-c(-1, 0, 1) / 0
+is.finite(x)
+is.infinite(x)
+is.nan(x)
+```
+
+### Character
+```{r}
+x <- "This is a reasonably long string."
+pryr::object_size(x)
+
+y <- rep(x, 1000)
+pryr::object_size(y)
+```
+
+### Missing values
+```{r}
+NA               # logical
+NA_integer_      # integer
+NA_real_         # double
+NA_character_    # character
+```
+### Exercises
+```{r}
+?dplyr::near
+sqrt(2) ^ 2 == 2
+near(sqrt(2) ^ 2, 2) # near()- This is a safe way of comparing if two vectors of floating point numbers are (pairwise) equal. This is safer than using ==, because it has a built in tolerance
+```
+
+## Using atomic vectors
+###  Coercion
+<!-- as.logical(), as.integer(), as.double(), or as.character()-->
+
+```{r}
+x <- sample(20, 100, replace = TRUE) #x=20, each generated number in x <=20, total size of x =100.
+x
+?sample
+y <- x > 10
+sum(y)  # how many are greater than 10?
+
+mean(y) # what proportion are greater than 10?
+```
+
+### Test functions
+<!-- is_logical(), is_integer(),is_double(), is_numeric(),is_character(),is_atomic(), is_list(), is_vector()-->
+
+### Scalars and recycling rules
+```{r}
+sample(10)
+sample(10) + 100
+runif(10) 
+runif(10) > 0.5
+```
+
+```{r}
+1:10 + 1:2
+1:10 + 1:3
+```
+
+```{r}
+# tibble(x = 1:4, y = 1:2)
+
+tibble(x = 1:4, y = rep(1:2, 2))
+tibble(x = 1:4, y = rep(1:2, each = 2))
+```
+
+### Naming vectors
+```{r}
+c(x = 1, y = 2, z = 4)
+set_names(1:3, c("a", "b", "c"))
+```
+
+###  Subsetting
+```{r}
+x <- c("one", "two", "three", "four", "five")
+x[c(3, 2, 5)] # [ is the subsetting function, and is called like x[a]
+x[c(-1, -3, -5)] # Negative values drop the elements at the specified positions
+```
+
+```{r}
+x <- c(10, 3, NA, 5, 8, 1, NA)
+
+# All non-missing values of x
+x[!is.na(x)]
+
+# All even (or missing!) values of x
+x[x %% 2 == 0]
+#> [1] 10 NA  8 NA
+```
+
+```{r}
+x <- c(abc = 1, def = 2, xyz = 5)
+x[c("xyz", "def")]
+x[]
+```
+
+### Exercises
+```{r}
+?is.vector()
+x <- c(a = 1, b = 2)
+is.vector(x) #returns-TRUE or FALSE
+as.vector(x) #gives a vector of the given length and mode.
+all.equal(x, as.vector(x))
+```
+
+## Recursive vectors (lists)
+```{r}
+x <- list(1, 2, 3)
+x
+
+str(x) #str()- focusses on the structure, not the contents.
+```
+
+```{r}
+y <- list("a", 1L, 1.5, TRUE)
+str(y)
+
+z <- list(list(1, 2), list("d", 2L))
+str(z)
+```
+
+### Visualising lists
+```{r}
+x1 <- list(c(1, 2), c(3, 4))
+x2 <- list(list(1, 2), list(3, 4))
+x3 <- list(1, list(2, list(3)))
+x1
+x2
+x3
+```
+
+### Subsetting
+```{r}
+a <- list(a = 1:3, b = "a string", c = pi, d = list(-1, -5))
+a
+
+# [ extracts a sub-list. The result will always be a list.
+str(a[1:2]) #extracts a and b
+
+str(a[4]) #extracts d
+```
+
+```{r}
+# [[ extracts a single component from a list. It removes a level of hierarchy from the list.
+str(a[[1]]) # a SINGLE component ONLY
+str(a[[4]])
+```
+
+```{r}
+# $ is a shorthand for extracting named elements of a list. It works similarly to [[ except that you don???t need to use quotes.
+a$a
+a[["a"]]
+a$d
+a[["d"]]
+```
+
+### Lists of condiments
+### Exercises
+```{r}
+g<-list(a=1:4, b="Emily", list(c=pi, d="Mozart"), list(e=2, f=3))
+# list(list(list(list(list(list(a))))))
+# list(list(list(list(list(list(g))))))
+str(g)
+```
+
+## Attributes
+```{r}
+x <- 1:10
+attr(x, "greeting")
+
+attr(x, "greeting") <- "Hi!"
+attr(x, "farewell") <- "Bye!"
+attributes(x)
+```
+
+```{r}
+# x is a character vector, as.Date() will call as.Date.character(); if it???s a factor, it???ll call as.Date.factor().
+as.Date
+methods("as.Date")
+```
+
+```{r}
+getS3method("as.Date", "default")
+getS3method("as.Date", "numeric")
+```
+
+## Augmented vectors
+<!--four important augmented vectors: Factors, Dates, Date-times, Tibbles-->
+### Factors
+
+```{r}
+x <- factor(c("ab", "cd", "ab"), levels = c("ab", "cd", "ef"))
+typeof(x)
+
+attributes(x)
+```
+
+### Dates and date-times
+```{r}
+# Dates in R are numeric vectors that represent the number of days since 1 January 1970.
+x <- as.Date("1971-01-01")
+class(x) #class prints the vector of names of classes an object inherits from
+unclass(x) #returns (a copy of) its argument with its class attribute removed
+?unclass
+typeof(x)
+
+attributes(x)
+```
+
+```{r}
+x <- lubridate::ymd_hm("1970-01-01 01:00")
+unclass(x)
+typeof(x)
+attributes(x) #???POSIXct??? stands for ???Portable Operating System Interface???, calendar time.
+```
+
+```{r}
+attr(x, "tzone") <- "US/Pacific"
+x
+
+attr(x, "tzone") <- "US/Eastern"
+x
+```
+
+```{r}
+y <- as.POSIXlt(x)
+typeof(y)
+
+attributes(y)
+```
+
+### Tibbles
+```{r}
+# Tibbles are augmented lists: they have class ???tbl_df??? + ???tbl??? + ???data.frame???, and names (column) and row.names attributes
+tb <- tibble::tibble(x = 1:5, y = 5:1)
+tb
+typeof(tb)
+
+attributes(tb)
+
+df <- data.frame(x = 1:5, y = 5:1)
+df
+typeof(df)
+
+attributes(df)
+```
+
+### Exercises
+```{r}
+hms::hms(3600)
+print(hms::hms(3600))
+typeof(hms::hms(3600))
+attributes(hms::hms(3600))
+```
+
+<!--CH20 end-->
+
+<!--CH21 Iteration-->
+# Iteration
+## Introduction
+### Prerequisites
+```{r}
+#reducing duplication-iteration
+library(tidyverse)
+```
+## For loops
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+df
+
+median(df$a)
+
+median(df$b)
+
+median(df$c)
+
+median(df$d)
+```
+
+```{r}
+output <- vector("double", ncol(df))  # 1. output, type of the vector (???logical???, ???integer???, ???double???, ???character???, etc) 
+for (i in seq_along(df)) {            # 2. sequence, seq_along() is a safe version of the familiar 1:length(l)
+  output[[i]] <- median(df[[i]])      # 3. body, $ cannot use integer indices.
+}
+output
+
+```
+
+```{r}
+output <- c("double", ncol(df))  # 1. output, c() is slower than vector()
+for (i in seq_along(df)) {            # 2. sequence, seq_along()--1:length(l)
+  output[[i]] <- median(df[[i]])      # 3. body, $ cannot use integer indices.
+}
+output
+```
+
+```{r}
+output <- vector("double", nrow(df))  # 1. output
+for (i in seq_along(df)) {            # 2. sequence
+  output[[i]] <- median(df[[i]])      # 3. body, $ cannot use integer indices.
+}
+output
+```
+
+<!-- Every for loop has three components:
+1. The output: output <- vector("double", length(x))
+2. The sequence: i in seq_along(df)
+3. The body: output[[i]] <- median(df[[i]])-->
+
+```{r}
+y <- vector("double", 0)
+seq_along(y)
+
+1:length(y)
+```
+
+### Exercises_21.2.1
+```{r}
+# 1.1.Compute the mean of every column in mtcars
+mtcars_mean<- tibble(a=mtcars$mpg, b=mtcars$cyl, 
+                     c=mtcars$disp, d=mtcars$hp,
+                     e=mtcars$drat, f=mtcars$wt,
+                     g=mtcars$qsec, h=mtcars$vs)
+
+output_mtcars_mean <-vector("double", ncol(mtcars_mean))
+for (i in seq_along(mtcars_mean)) {            
+  output_mtcars_mean[[i]] <- round(mean(mtcars_mean[[i]]), 2)      
+}
+output_mtcars_mean
+```
+
+```{r}
+output <-  vector("double", ncol(mtcars))
+names(output) <-  names(mtcars)
+for (i in names(mtcars)) {
+  output[[1]] <-  mean(mtcars[[i]])
+}
+output
+```
+
+```{r}
+# 1.2. Determine the type of each column in nycflights13::flights.
+data("flights", package = "nycflights13")
+output <-  vector("list", ncol(flights))
+names(output) <-  names(flights)
+for (i in names(flights)){
+  output[[i]] <-  class(flights[[i]])
+}
+output
+```
+
+```{r}
+# 1.3. Compute the number of unique values in each column of iris.
+output_unique <-vector("integer", ncol(iris))
+for(i in seq_along(iris)){
+  output_unique[[i]]<-length(unique(iris[[i]]))
+}
+output_unique
+```
+
+```{r}
+data(iris)
+iris_uniq <- vector("double", ncol(iris))
+names(iris_uniq) <- names(iris)
+for (i in names(iris)) {
+  iris_uniq[i] <- length(unique(iris[[i]]))
+}
+iris_uniq
+```
+
+```{r}
+# 1.4Generate 10 random normals for each of ??=???10,0, 10,and 100.
+
+# number to draw
+n <- 10
+# values of the mean
+mu <- c(-10, 0, 10, 100)
+normals <- vector("list", length(mu))
+for (i in seq_along(normals)) {
+  normals[[i]] <- rnorm(n, mean = mu[i])
+}
+normals
+```
+
+```{r}
+# 2. Eliminate the for loop in each of the following examples by taking advantage of an existing function that works with vectors:
+
+out <- ""
+letters
+
+for (x in letters) {
+  out <- stringr::str_c(out, x)
+}
+out
+?str_c
+
+stringr::str_c(letters, collapse = "")
+```
+
+```{r}
+# 3.1. Write a for loop that prints() the lyrics to the children???s song ???Alice the camel???.
+?cat
+humps <- c("five", "four", "three", "two", "one", "no")
+for (i in humps) {
+  cat(stringr::str_c("Alice the camel has ", rep(i, 3), " humps.", #i repeats 3 times, cat is to concatenate the representations.
+             collapse = "\n"), "\n")
+  if (i == "no") {
+    cat("Now Alice is a horse.\n")
+  } else {
+    cat("So go, Alice, go.\n")
+  }
+  cat("\n")
+}
+
+```
+
+```{r}
+# 3.2. Convert the nursery rhyme ???ten in the bed??? to a function. Generalise it to any number of people in any sleeping structure
+numbers <- c("ten", "nine", "eight", "seven", "six", "five",
+             "four", "three", "two", "one")
+for (i in numbers) {
+  cat(stringr::str_c("There were ", i, " in the bed\n"))
+  cat("and the little one said\n")
+  if (i == "one") {
+    cat("I'm lonely...")
+    } else {
+    cat("Roll over, roll over\n")
+    cat("So they all rolled over and one fell out.\n")
+      }
+      cat("\n")
+  }
+```
+
+```{r}
+# 3.3. Convert the song ???99 bottles of beer on the wall??? to a function. Generalise to any number of any vessel containing any liquid on any surface.
+bottles <- function(i) {
+  if (i > 2) {
+   bottles <- stringr::str_c(i - 1, " bottles")
+  } else if (i == 2) {
+   bottles <- stringr::str_c(1," bottles")
+  } else {
+   bottles <- stringr::str_c("No more bottles")
+  }
+  bottles
+}
+beer_bottles <- function(n) {
+  # should test whether n >= 1.
+  for (i in seq(n, 1)) {
+     cat(stringr::str_c(bottles(i), " of beer on the wall, ", bottles(i), " of beer.\n"))
+     cat(stringr::str_c("Take one down and pass it around, ", bottles(i - 1),
+                " of beer on the wall.\n\n"))
+  }
+  cat("No more bottles of beer on the wall, no more bottles of beer.\n")
+  cat(stringr::str_c("Go to the store and buy some more, ", bottles(n), " of beer on the wall.\n"))
+}
+beer_bottles(4)
+```
+
+```{r}
+# 4. It???s common to see for loops that don???t preallocate the output and instead increase the length of a vector at each step:
+output <- vector("integer", 0)
+for (i in seq_along(x)) {
+  output <- c(output, lengths(x[[i]]))
+}
+output
+
+library(microbenchmark)
+
+add_to_vector <- function(n) {
+  output <- vector("integer", 0)
+  for (i in seq_len(n)) {
+    output <- c(output, i)
+  }
+  output  
+}
+microbenchmark(add_to_vector(10000), times = 3)
+```
+
+```{r}
+add_to_vector_2 <- function(n) {
+  output <- vector("integer", n)
+  for (i in seq_len(n)) {
+    output[[i]] <- i
+  }
+  output
+}
+microbenchmark(add_to_vector_2(10000), times = 3)
+```
+
+```{r}
+x <- sample(100)
+x
+?sample
+sd <- 0
+for (i in seq_along(x)) {
+  sd <- sd + (x[i] - mean(x)) ^ 2
+}
+sd <- sqrt(sd / (length(x) - 1))
+sd
+```
+
+```{r}
+x <- runif(100)
+out <- vector("numeric", length(x))
+out[1] <- x[1]
+for (i in 2:length(x)) {
+  out[i] <- out[i - 1] + x[i]
+}
+out
+
+x <- runif(100)
+out <- vector("numeric", length(x))
+out[1] <- x[1]
+for (i in seq_along(x)) {
+  out[i] <- out[i] + x[i+1]
+}
+out
+```
+
+```{r}
+output <- vector("integer", 0)
+for (i in seq_along(x)) {
+  output <- c(output, lengths(x[[i]]))
+}
+output
+```
+
+## For loop variations
+### Modifying an existing object
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+df
+#out <- vector("numeric", length(df))
+rescale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+for (i in seq_along(df)) {
+  df[[i]] <- rescale01(df[[i]])
+}
+df
+
+```
+
+### Looping patterns
+<!-- 1. Loop over the elements: for (x in xs)-->
+<!-- 2.1. Loop over the names: for (nm in names(xs)), results <- vector("list", length(x)) names(results) <- names(x)-->
+<!-- 2.2. for (i in seq_along(x)) {
+  name <- names(x)[[i]]
+  value <- x[[i]]
+} -->
+
+```{r}
+results <- vector("list", length(x))
+names(results) <- names(x)
+names
+```
+
+
+### Unknown output length
+```{r}
+means <- c(0, 1, 2)
+
+output <- double()
+for (i in seq_along(means)) {
+  n <- sample(100, 1)
+  output <- c(output, rnorm(n, means[[i]]))
+}
+str(output)
+```
+
+```{r}
+out <- vector("list", length(means))
+for (i in seq_along(means)) {
+  n <- sample(100, 1)
+  out[[i]] <- rnorm(n, means[[i]])
+}
+str(out)
+str(unlist(out)) # unlist() to flatten a list of vectors into a single vector
+```
+
+### Unknown sequence length
+```{r}
+# A while loop is more general than a for loop, because you can rewrite any for loop as a while loop, but you can???t rewrite every while loop as a for loop.  A while loop is simpler than for loop because it only has two components, a condition and a body:
+for (i in seq_along(x)) {
+  # body
+}
+# Equivalent to
+i <- 1
+while (i <= length(x)) {
+  # body
+  i <- i + 1 
+}
+
+
+flip <- function() sample(c("T", "H"), 1)
+
+flips <- 0
+nheads <- 0
+
+while (nheads < 3) {
+  if (flip() == "H") {
+    nheads <- nheads + 1
+  } else {
+    nheads <- 0
+  }
+  flips <- flips + 1
+}
+flips
+```
+
+### Exercises_21.3.5
+
+```{r}
+# 1. Imagine you have a directory full of CSV files that you want to read in. You have their paths in a vector, files <- dir("data/", pattern = "\\.csv$", full.names = TRUE), and now want to read each one with read_csv(). Write the for loop that will load them into a single data frame.
+files <- dir("data/", pattern = "\\.csv$", full.names = TRUE)
+
+df <- vector("list", length(files))
+for (fname in seq_along(files)) {
+  df[[i]] <- read_csv(files[[i]])
+}
+df <- bind_rows(df)
+df
+```
+
+```{r}
+# 2.a. What happens if you use for (nm in names(x)) and x has no names?
+# When there are no names for the vector, it does not run the code in the loop (it runs zero iterations of the loop)
+x <- 1:3
+print(names(x))
+```
+```{r}
+# 2.b.What if only some of the elements are named?
+for (nm in names(x)) {
+  print(nm)
+  print(x[[nm]])
+}
+# If there only some names, then we get an error if we try to access an element without a name. However, oddly, nm == ?????? when there is no name.
+x <- c(a = 1, 2, c = 3)
+names(x)
+
+for (nm in names(x)) {
+  print(nm)
+  print(x[[nm]])
+}
+
+#2.c. What if the names are not unique?
+#if there are duplicate names, then x[[nm]] will give the first element with that name. There is no way to access duplicately named elements by name.
+x <- c(a = 1, a = 2, c = 3)
+names(x)
+
+for (nm in names(x)) {
+  print(nm)
+  print(x[[nm]])
+}
+```
+
+```{r}
+# Write a function that prints the mean of each numeric column in a data frame, along with its name. For example, show_mean(iris) would print:
+show_mean <- function(df, digits = 2) {
+  # Get max length of any variable in the dataset
+  maxstr <- max(stringr::str_length(names(df)))
+  for (nm in names(df)) {
+    if (is.numeric(df[[nm]])) {
+      cat(stringr::str_c(stringr::str_pad(stringr::str_c(nm, ":"), maxstr + 1L, side = "right"),
+                format(mean(df[[nm]]), digits = digits, nsmall = digits),
+                sep = " "),
+          "\n")
+    }
+  }
+}
+?str_c
+str_c("Letter: ", letters) #string concatenation
+str_c("Letter", letters, sep = ": ")
+str_c(letters, " is for", "...")
+?str_pad
+show_mean(iris)
+```
+
+```{r}
+# 4. What does this code do? How does it work?
+# This code mutates the disp and am columns. 
+# disp is multiplied by 0.0163871 am is replaced by a factor variable. The code works by looping over a named list of functions. It calls the named function in the list on the column of mtcars with the same name, and replaces the values of that column.
+trans <- list( 
+  disp = function(x) x * 0.0163871,
+  am = function(x) {
+    factor(x, labels = c("auto", "manual"))
+  }
+)
+for (var in names(trans)) {
+  mtcars[[var]] <- trans[[var]](mtcars[[var]])
+}
+
+```
+
+## For loops vs. functionals
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+output <- vector("double", length(df))
+for (i in seq_along(df)) {
+  output[[i]] <- mean(df[[i]])
+}
+output
+```
+
+```{r}
+col_mean <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- mean(df[[i]])
+  }
+  outputinstall.packages("moments")
+
+}
+
+col_median <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- median(df[[i]])
+  }
+  output
+}
+col_sd <- function(df) {
+  output <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    output[i] <- sd(df[[i]])
+  }
+  output
+}
+
+col_summary <- function(df, fun) {
+  out <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    out[i] <- fun(df[[i]])
+  }
+  out
+}
+
+col_summary(df, median)
+col_summary(df, mean)
+# col_summary(df, sd)
+```
+
+```{r}
+f1 <- function(x) abs(x - mean(x)) ^ 1
+f2 <- function(x) abs(x - mean(x)) ^ 2
+f3 <- function(x) abs(x - mean(x)) ^ 3
+
+f <- function(x, i) abs(x - mean(x)) ^ i
+
+```
+
+### Exercises
+```{r}
+# 1. Read the documentation for apply(). In the 2d case, what two for loops does it generalise. 
+
+# It generalises looping over the rows or columns of a matrix or data-frame.
+?apply()
+```
+
+```{r}
+# 2. Adapt col_summary() so that it only applies to numeric columns You might want to start with an is_numeric() function that returns a logical vector that has a TRUE corresponding to each numeric column.
+col_summary2 <- function(df, fun) {
+  # test whether each colum is numeric
+  numeric_cols <- vector("logical", length(df))
+  for (i in seq_along(df)) {
+    numeric_cols[[i]] <- is.numeric(df[[i]])
+  }
+  # indexes of numeric columns
+  idxs <- seq_along(df)[numeric_cols]
+  # number of numeric columns
+  n <- sum(numeric_cols)
+  out <- vector("double", n)
+  for (i in idxs) {
+    out[i] <- fun(df[[i]])
+  }
+  out
+}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = letters[1:10],
+  d = rnorm(10)
+)
+col_summary2(df, mean)
+```
+
+## The map functions
+<!-- map() makes a list.
+map_lgl() makes a logical vector.
+map_int() makes an integer vector.
+map_dbl() makes a double vector.
+map_chr() makes a character vector.-->
+
+```{r}
+map_dbl(df, mean)
+
+map_dbl(df, median)
+
+map_dbl(df, sd)
+```
+
+```{r}
+df %>% map_dbl(mean)
+
+df %>% map_dbl(median)
+
+df %>% map_dbl(sd)
+```
+
+```{r}
+map_dbl(df, mean, trim = 0.5)
+
+z <- list(x = 1:3, y = 4:5)
+map_int(z, length)
+```
+
+### Shortcuts
+```{r}
+models <- mtcars %>% 
+  split(.$cyl) %>% 
+  map(function(df) lm(mpg ~ wt, data = df))
+models
+
+cyldata<-tibble(cyl=mtcars$cyl)
+
+cyldata
+
+
+powfun <- function(x, pow) {
+    x^pow
+}
+powfun(2, 10)
+
+models <- mtcars %>% 
+  split(.$cyl) %>% 
+  map(~lm(mpg ~ wt, data = .)) # . as a pronoun: it refers to the current list element (in the same way that i referred to the current index in the for loop).
+models
+
+```
+
+```{r}
+models %>% 
+  map(summary) %>% 
+  map_dbl(~.$r.squared)
+
+models %>% 
+  map(summary) %>% 
+  map_dbl("r.squared")
+```
+
+```{r}
+x <- list(list(1, 2, 3), list(4, 5, 6), list(7, 8, 9))
+x %>% map_dbl(2) #list the second double number
+?map_dbl() #map(), map_if() and map_at() always return a list.
+```
+
+```{r}
+powfun <- function(x, pow) {
+    x^pow
+}
+powfun(2, 10)
+
+```
+
+### Base R
+<!-- apply() is basically identical to map(), except that map() is consistent with all the other functions in purrr, and you can use the shortcuts for .f.
+Base sapply() is a wrapper around lapply() that automatically simplifies the output. This is useful for interactive work but is problematic in a function because you never know what sort of output you???ll get-->
+```{r}
+x1 <- list(
+  c(0.27, 0.37, 0.57, 0.91, 0.20),
+  c(0.90, 0.94, 0.66, 0.63, 0.06), 
+  c(0.21, 0.18, 0.69, 0.38, 0.77)
+)
+x2 <- list(
+  c(0.50, 0.72, 0.99, 0.38, 0.78), 
+  c(0.93, 0.21, 0.65, 0.13, 0.27), 
+  c(0.39, 0.01, 0.38, 0.87, 0.34)
+)
+
+threshold <- function(x, cutoff = 0.8) x[x > cutoff]
+x1 %>% sapply(threshold) %>% str()
+
+x2 %>% sapply(threshold) %>% str()
+
+```
+
+### Exercises_21.5.3
+```{r}
+# Write code that uses one of the map functions to:
+  # 1.1. Compute the mean of every column in mtcars.
+map_dbl(mtcars, mean)
+  # 1.2. Determine the type of each column in nycflights13::flights
+map(nycflights13::flights, class)
+  #. Compute the number of unique values in each column of iris.
+map_int(iris, ~ length(unique(.)))
+# Generate 10 random normals for each of ??=???10,0,10, and 100.
+map(c(-10, 0, 10, 100), rnorm, n = 10)
+```
+```{r}
+# 2. How can you create a single vector that for each column in a data frame indicates whether or not it???s a factor?
+map_lgl(mtcars, is.factor)
+```
+
+```{r}
+# 3. What happens when you use the map functions on vectors that aren???t lists? What does map(1:5, runif) do? Why?
+# The function map applies the function to each element of the vector.
+map(1:5, runif)
+```
+
+```{r}
+# 4.a. What does map(-2:2, rnorm, n = 5) do? Why? 
+# This takes samples of n = 5 from normal distributions of means -2, -1, 0, 1, and 2, and returns a list with each element a numeric vectors of length 5.
+map(-2:2, rnorm, n = 5)
+
+
+#4.b.What does map_dbl(-2:2, rnorm, n = 5) do? Why?
+# if we use map_dbl it throws an error. map_dbl expects the function to return a numeric vector of length one. If we wanted a numeric vector, we could use map followed by flatten_dbl
+# map_dbl(-2:2, rnorm, n = 5)
+flatten_dbl(map(-2:2, rnorm, n = 5))
+
+```
+
+```{r}
+#5. Rewrite map(x, function(df) lm(mpg ~ wt, data = df)) to eliminate the anonymous function.
+map(list(mtcars), ~ lm(mpg ~ wt, data = .))
+```
+
+## Dealing with Failure
+<!-- result is the original result. If there was an error, this will be NULL.
+error is an error object. If the operation was successful, this will be NULL-->
+
+```{r}
+safe_log <- safely(log)
+str(safe_log(10))
+str(safe_log("a"))
+```
+
+
+
+
+### Tibbles
+<!--Tibbles are augmented lists: they have class ???tbl_df??? + ???tbl??? + ???data.frame???, and names (column) and row.names attributes-->
+
+```{r}
+# The difference between a tibble and a list is that all the elements of a data frame must be vectors with the same length.
+tb <- tibble::tibble(x = 1:5, y = 5:1)
+tb
+typeof(tb)
+
+attributes(tb)
+
+df <- data.frame(x = 1:5, y = 5:1)
+df
+typeof(df)
+
+attributes(df)
+```
+
+```{r}
+hms::hms(3600)
+```
+
